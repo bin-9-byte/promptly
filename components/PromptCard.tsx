@@ -35,7 +35,6 @@ const PromptCard: React.FC<PromptCardProps> = ({
           : 'border-slate-200 hover:shadow-xl hover:shadow-slate-200/50'
         }
       `}
-      onClick={() => onToggleSelect(prompt.id)}
     >
       {/* Selection Overlay/Indicator */}
       <div
@@ -64,7 +63,10 @@ const PromptCard: React.FC<PromptCardProps> = ({
         </div>
       </div>
 
-      <div className="p-7 flex flex-col h-full">
+      <div
+        className="p-7 flex flex-col h-full cursor-pointer"
+        onClick={() => onEdit(prompt)}
+      >
         {/* Header */}
         <div className="flex justify-between items-start mb-4 pr-10">
           <h3 className="font-bold text-slate-800 text-lg leading-tight group-hover:text-indigo-600 transition-colors line-clamp-1">
@@ -74,8 +76,10 @@ const PromptCard: React.FC<PromptCardProps> = ({
 
         {/* Content Preview */}
         <div className="mb-8 flex-grow">
-          <div className="text-slate-600 text-sm leading-relaxed line-clamp-4 font-mono bg-slate-50 p-4 rounded-xl border border-slate-100/80 group-hover:border-slate-200 transition-colors">
-            {prompt.content}
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100/80 group-hover:border-slate-200 transition-colors">
+            <div className="max-h-16 overflow-y-auto text-slate-600 text-sm leading-relaxed font-mono custom-scrollbar">
+              {prompt.content}
+            </div>
           </div>
         </div>
 

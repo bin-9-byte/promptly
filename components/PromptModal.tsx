@@ -53,21 +53,21 @@ const PromptModal: React.FC<PromptModalProps> = ({ isOpen, onClose, onSave, init
   }, []);
 
   const checkApiKey = async () => {
+    // @ts-ignore
+    if (window.aistudio && window.aistudio.hasSelectedApiKey) {
       // @ts-ignore
-      if (window.aistudio && window.aistudio.hasSelectedApiKey) {
-          // @ts-ignore
-           const hasKey = await window.aistudio.hasSelectedApiKey();
-           setHasApiKey(hasKey);
-      }
+      const hasKey = await window.aistudio.hasSelectedApiKey();
+      setHasApiKey(hasKey);
+    }
   }
 
   const handleSelectKey = async () => {
-       // @ts-ignore
-       if (window.aistudio && window.aistudio.openSelectKey) {
-          // @ts-ignore
-           await window.aistudio.openSelectKey();
-           checkApiKey();
-       }
+    // @ts-ignore
+    if (window.aistudio && window.aistudio.openSelectKey) {
+      // @ts-ignore
+      await window.aistudio.openSelectKey();
+      checkApiKey();
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -77,7 +77,7 @@ const PromptModal: React.FC<PromptModalProps> = ({ isOpen, onClose, onSave, init
 
   const handleOptimize = async () => {
     if (!formData.content.trim()) return;
-    
+
     setIsOptimizing(true);
     try {
       const optimized = await optimizePrompt(formData.content);
@@ -137,9 +137,9 @@ const PromptModal: React.FC<PromptModalProps> = ({ isOpen, onClose, onSave, init
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-opacity">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
-        
+
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100/80">
+        <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-100/80">
           <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
             {initialData ? 'Edit Prompt' : 'Create New Prompt'}
           </h2>
@@ -149,11 +149,11 @@ const PromptModal: React.FC<PromptModalProps> = ({ isOpen, onClose, onSave, init
         </div>
 
         {/* Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-grow">
+        <div className="p-4 md:p-6 overflow-y-auto space-y-4 md:space-y-6 flex-grow">
           <form id="prompt-form" onSubmit={handleSubmit} className="contents">
-            
+
             {/* Title - Large Input */}
-            <div className="group">
+            <div className="group mb-6 md:mb-8">
               <label htmlFor="title" className="sr-only">Title</label>
               <input
                 type="text"
@@ -162,39 +162,39 @@ const PromptModal: React.FC<PromptModalProps> = ({ isOpen, onClose, onSave, init
                 value={formData.title}
                 onChange={handleChange}
                 placeholder="Untitled Prompt"
-                className="w-full px-0 py-2 text-2xl font-bold text-slate-900 placeholder-slate-300 border-0 border-b-2 border-slate-100 focus:border-indigo-500 focus:ring-0 transition-colors bg-transparent placeholder:font-bold"
+                className="w-full px-0 py-2 text-2xl font-bold text-slate-900 placeholder-slate-300 border-0 border-b-2 border-slate-100 focus:border-indigo-500 focus:ring-0 transition-colors bg-transparent placeholder:font-normal"
                 required
               />
             </div>
 
             {/* Content - Main Area */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 md:gap-3">
               <div className="flex items-center justify-between">
                 <label htmlFor="content" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                   Prompt Content
                 </label>
-                
-                {/* AI Button - Pill style */}
+
+                {/* AI Button - Unified Pill style */}
                 {hasApiKey ? (
-                   <button
-                      type="button"
-                      onClick={handleOptimize}
-                      disabled={isOptimizing || !formData.content}
-                      className={`text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-full font-medium transition-all shadow-sm
-                      ${isOptimizing 
-                          ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                          : 'bg-white border border-indigo-100 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 hover:shadow-md'}`}
-                      >
-                      <SparklesIcon className={`w-3.5 h-3.5 ${isOptimizing ? 'animate-pulse' : ''}`} />
-                      {isOptimizing ? 'Optimizing...' : 'AI Optimize'}
+                  <button
+                    type="button"
+                    onClick={handleOptimize}
+                    disabled={isOptimizing || !formData.content}
+                    className={`text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-full font-medium transition-all shadow-sm
+                      ${isOptimizing
+                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        : 'bg-indigo-50 border border-indigo-100 text-indigo-600 hover:bg-indigo-100 hover:border-indigo-200 hover:shadow-md'}`}
+                  >
+                    <SparklesIcon className={`w-3.5 h-3.5 ${isOptimizing ? 'animate-pulse' : ''}`} />
+                    {isOptimizing ? 'Optimizing...' : 'AI Optimize'}
                   </button>
                 ) : (
                   <button
-                      type="button"
-                      onClick={handleSelectKey}
-                       className="text-xs flex items-center gap-1 px-3 py-1.5 rounded-full font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                    type="button"
+                    onClick={handleSelectKey}
+                    className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-full font-medium bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200 hover:border-slate-300 transition-all shadow-sm"
                   >
-                       Unlock AI Features
+                    Unlock AI Features
                   </button>
                 )}
               </div>
@@ -206,8 +206,8 @@ const PromptModal: React.FC<PromptModalProps> = ({ isOpen, onClose, onSave, init
                   value={formData.content}
                   onChange={handleChange}
                   placeholder="Type your prompt here..."
-                  rows={10}
-                  className="w-full px-5 py-4 rounded-xl bg-slate-50/50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all placeholder:text-slate-400 font-mono text-sm leading-relaxed resize-none text-slate-700"
+                  rows={6}
+                  className="w-full px-5 py-4 rounded-xl bg-slate-50/50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all placeholder:text-slate-400 font-mono text-sm leading-relaxed resize-none text-slate-700 md:min-h-[240px]"
                   required
                 />
               </div>
@@ -216,17 +216,17 @@ const PromptModal: React.FC<PromptModalProps> = ({ isOpen, onClose, onSave, init
             {/* Tags - Rich Input */}
             <div className="relative" ref={wrapperRef}>
               <label htmlFor="tags" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Tags</label>
-              
+
               <div className="flex flex-wrap items-center gap-2 p-2 rounded-lg bg-white border border-slate-200 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all min-h-[46px]">
                 <div className="pl-1 flex items-center pointer-events-none">
-                   <HashtagIcon className="w-4 h-4 text-slate-400" />
+                  <HashtagIcon className="w-4 h-4 text-slate-400" />
                 </div>
-                
+
                 {tags.map((tag, index) => (
                   <span key={index} className="flex items-center gap-1 px-2.5 py-1 text-sm font-medium bg-slate-100 text-slate-700 rounded-md border border-slate-200">
                     {tag}
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => removeTag(tag)}
                       className="text-slate-400 hover:text-red-500 focus:outline-none"
                     >
@@ -234,7 +234,7 @@ const PromptModal: React.FC<PromptModalProps> = ({ isOpen, onClose, onSave, init
                     </button>
                   </span>
                 ))}
-                
+
                 <input
                   type="text"
                   value={tagInput}
@@ -267,15 +267,15 @@ const PromptModal: React.FC<PromptModalProps> = ({ isOpen, onClose, onSave, init
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3">
-          <button 
+        <div className="px-4 md:px-6 py-3 md:py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3">
+          <button
             onClick={onClose}
             className="px-5 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-white border border-transparent hover:border-slate-200 rounded-lg transition-all"
           >
             Cancel
           </button>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             form="prompt-form"
             className="px-5 py-2.5 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-lg shadow-slate-900/10 hover:shadow-slate-900/20 transition-all active:scale-95"
           >
