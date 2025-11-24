@@ -21,7 +21,7 @@ import { parseTags } from './utils/tagUtils';
 
 const App: React.FC = () => {
   // Custom Hooks
-  const { prompts, createPrompt, updatePrompt, deletePrompt } = usePrompts();
+  const { prompts, loading, createPrompt, updatePrompt, deletePrompt, importPrompts } = usePrompts();
   const { toasts, addToast, removeToast } = useToast();
   const {
     searchTerm,
@@ -44,30 +44,35 @@ const App: React.FC = () => {
   // 事件处理函数
   // ============================================================
 
-  const handleCreateOrUpdate = (data: PromptFormData) => {
+  const handleCreateOrUpdate = async (data: PromptFormData) => {
     const tagsArray = parseTags(data.tags);
 
-    if (currentPrompt) {
-      // Update
-      updatePrompt(currentPrompt.id, {
-        title: data.title,
-        content: data.content,
-        tags: tagsArray,
-      });
-      addToast('Prompt updated successfully');
-    } else {
-      // Create
-      const newPrompt: Prompt = {
-        id: Date.now().toString(),
-        title: data.title,
-        content: data.content,
-        tags: tagsArray,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        isFavorite: false,
-      };
-      createPrompt(newPrompt);
-      addToast('New prompt created');
+    try {
+      if (currentPrompt) {
+        // Update
+        await updatePrompt(currentPrompt.id, {
+          title: data.title,
+          content: data.content,
+          tags: tagsArray,
+        });
+        addToast('Prompt updated successfully');
+      } else {
+        // Create
+        const newPrompt: Prompt = {
+          id: Date.now().toString(),
+          title: data.title,
+          content: data.content,
+          tags: tagsArray,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          isFavorite: false,
+        };
+        await createPrompt(newPrompt);
+        addToast('New prompt created');
+      }
+    } catch (error) {
+      console.error('Error saving prompt:', error);
+      addToast('Failed to save prompt', 'error');
     }
   };
 
@@ -77,11 +82,16 @@ const App: React.FC = () => {
   };
 
   // Confirm delete
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (promptToDelete) {
-      deletePrompt(promptToDelete);
-      removeFromSelection(promptToDelete);
-      addToast('Prompt deleted');
+      try {
+        await deletePrompt(promptToDelete);
+        removeFromSelection(promptToDelete);
+        addToast('Prompt deleted');
+      } catch (error) {
+        console.error('Error deleting prompt:', error);
+        addToast('Failed to delete prompt', 'error');
+      }
       setPromptToDelete(null);
     }
   };
@@ -105,38 +115,96 @@ const App: React.FC = () => {
     const selectedPrompts = prompts.filter(p => selectedIds.has(p.id));
     if (selectedPrompts.length === 0) return;
 
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(selectedPrompts, null, 2));
+    const blob = new Blob([JSON.stringify(selectedPrompts, null, 2)], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
     const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", `promptly-export-${new Date().toISOString().slice(0, 10)}.json`);
+    downloadAnchorNode.href = url;
+    downloadAnchorNode.download = `promptly-export-${new Date().toISOString().slice(0, 10)}.json`;
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
-    downloadAnchorNode.remove();
+
+    // 稍微延迟移除，确保下载触发
+    setTimeout(() => {
+      document.body.removeChild(downloadAnchorNode);
+      URL.revokeObjectURL(url);
+    }, 100);
 
     addToast(`${selectedPrompts.length} prompts downloaded`);
     clearSelection();
+  };
+
+  /**
+   * 处理导入 JSON 文件
+   */
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const content = e.target?.result as string;
+        const imported: Prompt[] = JSON.parse(content);
+
+        // 验证导入数据格式
+        if (!Array.isArray(imported)) {
+          addToast('Invalid file format', 'error');
+          return;
+        }
+
+        // 导入（合并模式）
+        const count = await importPrompts(imported, 'merge');
+        addToast(`Successfully imported ${count} new prompts`);
+      } catch (error) {
+        console.error('Error importing file:', error);
+        addToast('Failed to import file', 'error');
+      }
+    };
+    reader.readAsText(file);
+
+    // 清空 input，允许重复导入同一文件
+    event.target.value = '';
   };
 
 
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800 font-sans pb-24 sm:pb-12">
-      {/* Navbar */}
-      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200 supports-[backdrop-filter]:bg-white/60">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 cursor-pointer" onClick={clearSelection}>
-            <div className="bg-slate-900 text-white p-1.5 rounded-lg shadow-sm">
-              <SparklesIcon className="w-5 h-5" />
-            </div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900">Promptly</h1>
+      {/* Header */}
+      <header className="bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+              <SparklesIcon className="w-8 h-8 text-indigo-600" />
+              Promptly
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">Manage your AI prompts efficiently</p>
           </div>
-
-          <div className="flex items-center gap-4">
+          <div className="flex gap-3">
+            {/* 隐藏的文件输入 */}
+            <input
+              type="file"
+              id="import-input"
+              accept=".json"
+              onChange={handleImport}
+              className="hidden"
+            />
+            {/* 导入按钮 */}
+            <label
+              htmlFor="import-input"
+              className="cursor-pointer inline-flex items-center px-5 py-2.5 border border-slate-300 text-sm font-semibold text-slate-700 bg-white rounded-xl shadow-sm hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              Import
+            </label>
+            {/* 创建新 Prompt 按钮 */}
             <button
               onClick={openCreateModal}
-              className="hidden sm:flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-slate-900/10 hover:shadow-slate-900/20 active:scale-95"
+              className="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/20 text-white bg-indigo-600 hover:bg-indigo-700 transition-all active:scale-95"
             >
-              <PlusIcon className="w-5 h-5" />
+              <PlusIcon className="w-5 h-5 mr-2" />
               New Prompt
             </button>
           </div>
