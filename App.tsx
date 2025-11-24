@@ -148,7 +148,20 @@ const App: React.FC = () => {
 
         // 验证导入数据格式
         if (!Array.isArray(imported)) {
-          addToast('Invalid file format', 'error');
+          addToast('Invalid file format: Expected an array', 'error');
+          return;
+        }
+
+        // 校验数据结构：确保包含必要的字段
+        const isValid = imported.every((item: any) =>
+          typeof item === 'object' &&
+          item !== null &&
+          typeof item.title === 'string' &&
+          typeof item.content === 'string'
+        );
+
+        if (!isValid) {
+          addToast('Invalid data format: Missing title or content fields', 'error');
           return;
         }
 
